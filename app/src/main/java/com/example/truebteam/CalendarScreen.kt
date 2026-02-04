@@ -159,7 +159,8 @@ fun getShiftProgress(shift: String, now: LocalTime = LocalTime.now()): String {
     val end = when (shift) {
         "SC1" -> LocalTime.of(15, 0)
         "SC2" -> LocalTime.of(23, 0)
-        "SC3" -> LocalTime.of(7, 0).plusHours(24)
+       // "SC3" -> LocalTime.of(7, 0).plusHours(24) // asta e original;
+        "SC3" -> LocalTime.of(7, 0)
         else -> start
     }
 
