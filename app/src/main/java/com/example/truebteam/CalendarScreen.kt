@@ -91,29 +91,52 @@ private val SIMULATE_SHIFT_TODAY: String? = null
 // ======================
 private val vacationDays = setOf(
     // aici scrie zilele de concediu
-     LocalDate.of(2026, 4, 10),
-     LocalDate.of(2026, 4, 11),
-     LocalDate.of(2026, 4, 12),
-     LocalDate.of(2026, 4, 13),
-     LocalDate.of(2026, 8, 8),
-     LocalDate.of(2026, 8, 9),
-     LocalDate.of(2026, 8, 10),
-     LocalDate.of(2026, 8, 11),
-     LocalDate.of(2026, 8, 12),
-     LocalDate.of(2026, 8, 13),
-     LocalDate.of(2026, 8, 14),
-     LocalDate.of(2026, 8, 15),
-     LocalDate.of(2026, 8, 16),
-     LocalDate.of(2026, 8, 17),
-     LocalDate.of(2026, 8, 18),
-     LocalDate.of(2026, 8, 19),
-     LocalDate.of(2026, 8, 20),
-     LocalDate.of(2026, 8, 21),
-     LocalDate.of(2026, 8, 22),
-     LocalDate.of(2026, 8, 23),
+    LocalDate.of(2026, 4, 10),
+    LocalDate.of(2026, 4, 11),
+    LocalDate.of(2026, 4, 12),
+    LocalDate.of(2026, 4, 13),
+    LocalDate.of(2026, 8, 8),
+    LocalDate.of(2026, 8, 9),
+    LocalDate.of(2026, 8, 10),
+    LocalDate.of(2026, 8, 11),
+    LocalDate.of(2026, 8, 12),
+    LocalDate.of(2026, 8, 13),
+    LocalDate.of(2026, 8, 14),
+    LocalDate.of(2026, 8, 15),
+    LocalDate.of(2026, 8, 16),
+    LocalDate.of(2026, 8, 17),
+    LocalDate.of(2026, 8, 18),
+    LocalDate.of(2026, 8, 19),
+    LocalDate.of(2026, 8, 20),
+    LocalDate.of(2026, 8, 21),
+    LocalDate.of(2026, 8, 22),
+    LocalDate.of(2026, 8, 23),
+)
+
+private val legalHolidays = setOf(
+    LocalDate.of(2026, 1, 1),   // Anul Nou
+    LocalDate.of(2026, 1, 2),   // A doua zi de Anul Nou
+    LocalDate.of(2026, 1, 6),   // Boboteaza
+    LocalDate.of(2026, 1, 7),   // Sf. Ion
+    LocalDate.of(2026, 1, 24),  // Unirea Principatelor
+    LocalDate.of(2026, 4, 13),   // Paste
+    LocalDate.of(2026, 4, 10),  // Vinerea MNare
+    LocalDate.of(2026, 4, 11),  // Paste
+    LocalDate.of(2026, 4, 12),   // Paste
+    LocalDate.of(2026, 5, 1),   // Ziua Muncii
+    LocalDate.of(2026, 5, 31),  // Rsusaliile
+    LocalDate.of(2026, 6, 1),   // Ziua Copilului, Rusalii
+    LocalDate.of(2026, 8, 15),  // Adormirea Maicii Domnului
+    LocalDate.of(2026, 11, 30), // Sf. Andrei
+    LocalDate.of(2026, 12, 1),  // Ziua Națională
+    LocalDate.of(2026, 12, 25), // Craciunul
+    LocalDate.of(2026, 12, 26)  //A doua zi de Craciun
 )
 
 private fun isVacation(date: LocalDate): Boolean = vacationDays.contains(date)
+
+// ✅ NOU: sărbători legale
+private fun isLegalHoliday(date: LocalDate): Boolean = legalHolidays.contains(date)
 
 fun getShiftForDate(date: LocalDate): String {
     val d = ChronoUnit.DAYS.between(cycleStartDate, date)
@@ -125,8 +148,6 @@ fun getShiftForDate(date: LocalDate): String {
         else -> "LIB"
     }
 }
-
-
 
 fun getEffectiveShift(now: LocalDateTime = LocalDateTime.now()): String {
     val today = now.toLocalDate()
@@ -159,7 +180,7 @@ fun getShiftProgress(shift: String, now: LocalTime = LocalTime.now()): String {
     val end = when (shift) {
         "SC1" -> LocalTime.of(15, 0)
         "SC2" -> LocalTime.of(23, 0)
-       // "SC3" -> LocalTime.of(7, 0).plusHours(24) // asta e original;
+        // "SC3" -> LocalTime.of(7, 0).plusHours(24) // asta e original;
         "SC3" -> LocalTime.of(7, 0)
         else -> start
     }
@@ -169,7 +190,9 @@ fun getShiftProgress(shift: String, now: LocalTime = LocalTime.now()): String {
     val remaining = Duration.between(nowAdjusted, end).toMinutes()
 
     // Dacă e înainte de ora de start a turei -> încă ești acasă
-    if (now.isBefore(start)) return messages123.random()
+    if (shift != "SC3" && now.isBefore(start)) {
+        return messages123.random()
+    }
 
     if (remaining <= 0) return """
 GATA! Ești acasă, boss! 🎉
@@ -243,13 +266,11 @@ fun CalendarScreen() {
         } * 8
     }
 
-
     val overtime = workedHours - normHours
 
     val todayShift = remember(tick) {
         SIMULATE_SHIFT_TODAY ?: getEffectiveShift()
     }
-
 
     val themeBackground = when (todayShift) {
         "SC1" -> Color(0xFFE8F6FF)
@@ -315,7 +336,7 @@ fun CalendarScreen() {
                 .align(Alignment.TopCenter)
                 .padding(top = 90.dp),
             fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = when {
                 overtime > 0 -> Color(0xFF000000)
                 overtime < 0 -> Color(0xFFFF6A6A)
@@ -414,7 +435,8 @@ fun CalendarScreen() {
 
                 val leading = List(offset) { prevDays - offset + 1 + it }
                 val current = (1..month.lengthOfMonth()).toList()
-                val totalCells = 35
+                val totalCells =
+                    if (leading.size + current.size > 35) 42 else 35
                 val trailing = (1..(totalCells - (leading.size + current.size))).toList()
 
                 LazyVerticalGrid(
@@ -422,6 +444,7 @@ fun CalendarScreen() {
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // ✅ FIX: leading cells normale (nu redefinim DayBox aici)
                     items(leading.size) { i ->
                         DayBox(
                             text = "${leading[i]}",
@@ -454,12 +477,16 @@ fun CalendarScreen() {
                         val border = if (isToday) Color.Red else Color.Black
                         val borderW = if (isToday) 5.dp else 1.dp
 
+                        // ✅ DOAR sărbătorile legale = text roșu
+                        val textColor = if (isLegalHoliday(date)) Color.Red else Color.Black
+
                         DayBox(
                             text = "$day\n$displayShift",
                             background = bg,
                             borderColor = border,
                             borderWidth = borderW,
-                            textAlignStart = true
+                            textAlignStart = true,
+                            textColor = textColor
                         ) { selectedDate = date }
                     }
 
@@ -559,6 +586,7 @@ fun DayBox(
     borderColor: Color,
     borderWidth: Dp = 1.dp,
     textAlignStart: Boolean = false,
+    textColor: Color = Color.Black, // ✅ NOU (default negru)
     onClick: () -> Unit = {}
 ) {
     Box(
@@ -574,6 +602,7 @@ fun DayBox(
         Text(
             text = text,
             fontSize = 14.sp,
+            color = textColor, // ✅ NOU
             textAlign = if (textAlignStart) TextAlign.Start else TextAlign.Center
         )
     }
