@@ -336,10 +336,10 @@ fun CalendarScreen() {
                 .align(Alignment.TopCenter)
                 .padding(top = 90.dp),
             fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Normal,
             color = when {
                 overtime > 0 -> Color(0xFF000000)
-                overtime < 0 -> Color(0xFFFF6A6A)
+                overtime <= 0 -> Color(0xFFFF6A6A)
                 else -> Color.Black
             }
         )
