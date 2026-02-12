@@ -170,6 +170,7 @@ fun getEffectiveShift(now: LocalDateTime = LocalDateTime.now()): String {
 }
 
 fun getShiftProgress(shift: String, now: LocalTime = LocalTime.now()): String {
+
     val start = when (shift) {
         "SC1" -> LocalTime.of(7, 0)
         "SC2" -> LocalTime.of(15, 0)
@@ -180,29 +181,35 @@ fun getShiftProgress(shift: String, now: LocalTime = LocalTime.now()): String {
     val end = when (shift) {
         "SC1" -> LocalTime.of(15, 0)
         "SC2" -> LocalTime.of(23, 0)
-        // "SC3" -> LocalTime.of(7, 0).plusHours(24) // asta e original;
-        "SC3" -> LocalTime.of(7, 0)
+        "SC3" -> LocalTime.of(7, 0).plusHours(24) // ✅ FIX
         else -> start
     }
 
-    // Dacă e SC3 și e după miezul nopții, ajustăm "now" ca să comparăm corect cu intervalul 23:00-31:00
-    val nowAdjusted = if (shift == "SC3" && now.isBefore(start)) now.plusHours(24) else now
-    val remaining = Duration.between(nowAdjusted, end).toMinutes()
+    // ✅ Dacă e înainte de ora de start → ești acasă
+    if (shift == "SC3" && now.isBefore(start) && now >= LocalTime.of(7,0)) {
+        return messages123.random()
+    }
 
-    // Dacă e înainte de ora de start a turei -> încă ești acasă
     if (shift != "SC3" && now.isBefore(start)) {
         return messages123.random()
     }
 
-    if (remaining <= 0) return """
+    // Ajustare pentru ture peste miezul nopții
+    val nowAdjusted =
+        if (shift == "SC3" && now.isBefore(start)) now.plusHours(24)
+        else now
+
+    val remaining = Duration.between(nowAdjusted, end).toMinutes()
+
+    if (remaining <= 0) {
+        return """
 GATA! Ești acasă, boss! 🎉
 ...relax, relax, relax... 🍺
 """.trimIndent()
+    }
 
-    // Dacă mai sunt sub 30 minute → mesaj de final random
     if (remaining <= 30) return messagesAlmostDone.random()
 
-    // Altfel → mesaj random în funcție de tură
     return when (shift) {
         "SC1" -> messagesSC1.random()
         "SC2" -> messagesSC2.random()
@@ -210,6 +217,7 @@ GATA! Ești acasă, boss! 🎉
         else -> messagesLIB.random()
     }
 }
+
 
 @Composable
 fun CalendarScreen() {

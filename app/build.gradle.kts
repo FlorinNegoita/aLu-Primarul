@@ -13,8 +13,9 @@ android {
         applicationId = "com.example.turecalendar"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        versionCode = (System.currentTimeMillis() / 1000).toInt()
         versionName = "1.0"
+
     }
 
     buildFeatures {
