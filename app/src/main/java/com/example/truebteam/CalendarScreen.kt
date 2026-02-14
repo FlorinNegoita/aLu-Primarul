@@ -208,8 +208,10 @@ GATA! Ești acasă, boss! 🎉
 """.trimIndent()
     }
 
+    // Dacă mai sunt sub 30 minute → mesaj de final random
     if (remaining <= 30) return messagesAlmostDone.random()
 
+    // Altfel → mesaj random în funcție de tură
     return when (shift) {
         "SC1" -> messagesSC1.random()
         "SC2" -> messagesSC2.random()
@@ -217,7 +219,6 @@ GATA! Ești acasă, boss! 🎉
         else -> messagesLIB.random()
     }
 }
-
 
 @Composable
 fun CalendarScreen() {
@@ -276,9 +277,11 @@ fun CalendarScreen() {
 
     val overtime = workedHours - normHours
 
-    val todayShift = remember(tick) {
-        SIMULATE_SHIFT_TODAY ?: getEffectiveShift()
-    }
+    // 🔥 FIX: luăm timpul curent la fiecare recompoziție (tick forțează recompoziția)
+    val now = LocalDateTime.now()
+
+    // 🔥 FIX: scoatem remember(tick) și folosim getEffectiveShift(now)
+    val todayShift = SIMULATE_SHIFT_TODAY ?: getEffectiveShift(now)
 
     val themeBackground = when (todayShift) {
         "SC1" -> Color(0xFFE8F6FF)
@@ -288,20 +291,24 @@ fun CalendarScreen() {
         else -> Color.White
     }
 
-    var progressText by remember { mutableStateOf(getShiftProgress(todayShift)) }
+    // 🔥 FIX: mesajul ține cont și de ora reală + se actualizează la tick
+    var progressText by remember(todayShift, tick) {
+        mutableStateOf(getShiftProgress(todayShift, now.toLocalTime()))
+    }
 
-    // 🎯 Recalculăm mesajul când se schimbă tura "de azi" (sau când revii în prim-plan)
+    // 🎯 Recalculăm mesajul când se schimbă tura "de azi"
     LaunchedEffect(todayShift) {
-        progressText = getShiftProgress(todayShift)
+        val refreshedNow = LocalDateTime.now()
+        progressText = getShiftProgress(todayShift, refreshedNow.toLocalTime())
     }
 
     // 🔄 Refresh mesaj când aplicația revine în prim-plan
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                val shift = getShiftForDate(LocalDate.now())
-                val effectiveShift = SIMULATE_SHIFT_TODAY ?: shift
-                progressText = getShiftProgress(effectiveShift)
+                val refreshedNow = LocalDateTime.now()
+                val effectiveShift = SIMULATE_SHIFT_TODAY ?: getEffectiveShift(refreshedNow)
+                progressText = getShiftProgress(effectiveShift, refreshedNow.toLocalTime())
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -473,13 +480,14 @@ fun CalendarScreen() {
                         val displayShift = if (vacation) "CO" else realShift
 
                         val bg = when {
-                            vacation -> Color(0xFFB39DDB) // mov pastel pentru concediu
-                            realShift == "SC1" -> Color(0xFFADD8E6)
-                            realShift == "SC2" -> Color(0xFFFFD580)
-                            realShift == "SC3" -> Color(0xFFFFA8A8)
-                            realShift == "LIB" -> Color(0xFF90EE90)
+                            vacation -> Color(0xFFB39DDB).copy(alpha = 0.55f)
+                            realShift == "SC1" -> Color(0xFFADD8E6).copy(alpha = 0.90f)
+                            realShift == "SC2" -> Color(0xFFFFD580).copy(alpha = 0.45f)
+                            realShift == "SC3" -> Color(0xFFFFA8A8).copy(alpha = 0.45f)
+                            realShift == "LIB" -> Color(0xFF90EE90).copy(alpha = 0.45f)
                             else -> Color.White
                         }
+
 
                         val isToday = (date == today)
                         val border = if (isToday) Color.Red else Color.Black
